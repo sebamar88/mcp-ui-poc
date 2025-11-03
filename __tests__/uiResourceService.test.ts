@@ -70,7 +70,7 @@ describe('buildPostRemoteDomResource', () => {
     const script = resource.text ?? ''
 
     expect(script).toContain('window.parent?.postMessage')
-    expect(script).toContain('toolName: \'loadExtendedProfile\'')
-    expect(script).toContain('Remote DOM ·')
+    expect(script).toContain("toolName: 'loadExtendedProfile'")
+    expect(script).toContain('const container = document.createElement(')
   })
 })
