@@ -4,6 +4,7 @@ export type MCPResourceMimeType =
   | 'text/html'
   | 'text/uri-list'
   | 'application/vnd.mcp-ui.remote-dom'
+  | 'application/vnd.mcp-ui.remote-dom+javascript; framework=webcomponents'
 
 export interface UIResource {
   type: 'resource'

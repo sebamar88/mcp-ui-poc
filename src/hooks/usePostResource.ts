@@ -3,7 +3,10 @@ import { useQuery } from '@tanstack/react-query'
 
 import { fetchPostDetails } from '#src/services/postService'
 import type { PostDetails } from '#src/services/postService'
-import { buildPostSummaryResource } from '#src/services/uiResourceService'
+import {
+  buildPostRemoteDomResource,
+  buildPostSummaryResource,
+} from '#src/services/uiResourceService'
 import type { UIResource } from '#src/types/ui'
 import { extractErrorMessage } from '#src/utils/errorHandling'
 
@@ -14,11 +17,15 @@ export function usePostResource(postId: number | null) {
     queryFn: () => fetchPostDetails(postId as number),
   })
 
-  const resource = useMemo<UIResource | null>(() => {
+  const { htmlResource, remoteDomResource } = useMemo(() => {
     if (!query.data) {
-      return null
+      return { htmlResource: null as UIResource | null, remoteDomResource: null as UIResource | null }
     }
-    return buildPostSummaryResource(query.data)
+
+    return {
+      htmlResource: buildPostSummaryResource(query.data),
+      remoteDomResource: buildPostRemoteDomResource(query.data),
+    }
   }, [query.data])
 
   const errorMessage = useMemo(
@@ -34,11 +41,12 @@ export function usePostResource(postId: number | null) {
 
   return {
     details: query.data ?? null,
-    resource,
+    htmlResource,
+    remoteDomResource,
     isLoading: query.isPending,
     isFetching: query.isFetching,
     error: errorMessage,
-    hasResource: Boolean(resource && query.data),
+    hasResource: Boolean(htmlResource && query.data),
     refresh: query.refetch,
   }
 }

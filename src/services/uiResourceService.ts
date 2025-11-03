@@ -188,3 +188,71 @@ export function buildPostSummaryResource(details: PostDetails): UIResource {
     },
   }
 }
+
+export function buildPostRemoteDomResource(details: PostDetails): UIResource {
+  const { post, user } = details
+  const payload = {
+    postId: post.id,
+    author: user.name,
+    company: user.company?.name ?? 'Sin compañía',
+    username: user.username,
+  }
+
+  const remoteScript = `
+const data = ${JSON.stringify(payload)};
+
+const card = document.createElement('ui-card');
+card.setAttribute('padding', 'xl');
+card.setAttribute('bordered', 'true');
+card.setAttribute('title', 'Remote DOM – Perfil de ' + data.author);
+
+const stack = document.createElement('ui-stack');
+stack.setAttribute('direction', 'vertical');
+stack.setAttribute('spacing', 'md');
+
+const subtitle = document.createElement('ui-text');
+subtitle.setAttribute('variant', 'subtitle');
+subtitle.textContent = 'Usuario @' + data.username + ' · ' + data.company;
+
+const description = document.createElement('ui-text');
+description.textContent = 'Este recurso se renderiza usando Remote DOM y puede reaccionar en vivo a las acciones.';
+
+const notifyButton = document.createElement('ui-button');
+notifyButton.setAttribute('label', 'Notificar autor');
+notifyButton.addEventListener('press', () => {
+  window.parent?.postMessage({
+    type: 'notify',
+    payload: { message: 'Remote DOM: avisamos a ' + data.author }
+  }, '*');
+});
+
+const toolButton = document.createElement('ui-button');
+toolButton.setAttribute('label', 'Solicitar datos extra');
+toolButton.setAttribute('tone', 'critical');
+toolButton.addEventListener('press', () => {
+  window.parent?.postMessage({
+    type: 'tool',
+    payload: {
+      toolName: 'loadExtendedProfile',
+      params: { postId: data.postId, username: data.username }
+    }
+  }, '*');
+});
+
+stack.appendChild(subtitle);
+stack.appendChild(description);
+stack.appendChild(notifyButton);
+stack.appendChild(toolButton);
+card.appendChild(stack);
+root.appendChild(card);
+`
+
+  return {
+    type: 'resource',
+    resource: {
+      uri: `ui://posts/${post.id}/remote-dom`,
+      mimeType: 'application/vnd.mcp-ui.remote-dom+javascript; framework=webcomponents',
+      text: remoteScript,
+    },
+  }
+}

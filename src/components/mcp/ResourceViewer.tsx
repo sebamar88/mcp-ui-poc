@@ -1,7 +1,11 @@
-import { UIResourceRenderer, type UIResourceRendererProps } from '@mcp-ui/client'
+import { UIResourceRenderer } from '@mcp-ui/client'
 
 import { ErrorCallout } from '#src/components/feedback/ErrorCallout'
 import type { UIAction, UIResource } from '#src/types/ui'
+
+export type MCPUIRendererComponent = (
+  props: Parameters<typeof UIResourceRenderer>[0],
+) => JSX.Element
 
 interface ResourceViewerProps {
   resource: UIResource | null
@@ -10,7 +14,7 @@ interface ResourceViewerProps {
   error: string | null
   onAction: (action: UIAction) => void
   onRetry?: () => void
-  renderer?: (props: UIResourceRendererProps) => JSX.Element
+  renderer?: MCPUIRendererComponent
 }
 
 export function ResourceViewer({
@@ -39,7 +43,7 @@ export function ResourceViewer({
     return Promise.resolve()
   }
 
-  const Renderer = renderer ?? UIResourceRenderer
+  const Renderer = renderer ?? (UIResourceRenderer as MCPUIRendererComponent)
 
   return (
     <div className="resource-wrapper">

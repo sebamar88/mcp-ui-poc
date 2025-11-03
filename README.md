@@ -8,8 +8,8 @@ PoC que muestra cómo integrar el SDK `@mcp-ui/client` en una aplicación React 
 - 🧱 Arquitectura modular por capas para separar acceso a datos, lógica de dominio y UI.
 - 🔁 Gestión de datos con React Query y un `HttpClient` propio basado en `fetch` con control de errores.
 - 📊 Bitácora de acciones que registra las notificaciones/intenciones emitidas por el recurso MCP-UI.
-- ✅ Tests unitarios y de integración con Vitest + Testing Library.
-- 🌐 Endpoint MCP (`/api/mcp`) listo para funciones serverless (ej. Vercel).
+- ✅ Tests unitarios e integrados adicionales para servicios, hooks y componentes MCP.
+- 🌐 Endpoint MCP (`/api/mcp`) listo para funciones serverless (ej. Vercel), compatible con `mode=html|remote`.
 
 ## Scripts disponibles
 
@@ -27,6 +27,7 @@ recursos MCP-UI. Con ella puedes desplegar la PoC en plataformas como Vercel:
 
 1. Construye el frontend (`npm run build`). El resultado quedará en `dist/`.
 2. Vercel detectará automáticamente `/api/mcp.ts` y expondrá `https://tu-app.vercel.app/api/mcp?postId=1`.
+   Añade `mode=remote` para obtener la variante `remote-dom`.
 3. Si deseas consumir este endpoint desde el frontend, configura `VITE_MCP_ENDPOINT` apuntando a tu
    dominio y úsalo en tu capa de datos.
 ```

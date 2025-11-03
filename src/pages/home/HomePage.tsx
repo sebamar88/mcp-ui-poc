@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { ActionLog } from '#src/components/mcp/ActionLog'
-import { ResourceViewer } from '#src/components/mcp/ResourceViewer'
-import type { UIResourceRendererProps } from '@mcp-ui/client'
+import { ResourceViewer, type MCPUIRendererComponent } from '#src/components/mcp/ResourceViewer'
 import { PostList } from '#src/components/posts/PostList'
 import { usePostResource } from '#src/hooks/usePostResource'
 import { usePosts } from '#src/hooks/usePosts'
@@ -24,7 +23,7 @@ function createLogEntry(action: UIAction): UIActionLogEntry {
 }
 
 interface HomePageProps {
-  resourceRenderer?: (props: UIResourceRendererProps) => JSX.Element
+  resourceRenderer?: MCPUIRendererComponent
 }
 
 export function HomePage({ resourceRenderer }: HomePageProps = {}) {
@@ -46,7 +45,8 @@ export function HomePage({ resourceRenderer }: HomePageProps = {}) {
 
   const {
     details,
-    resource,
+    htmlResource,
+    remoteDomResource,
     isLoading: resourceLoading,
     isFetching: resourceFetching,
     error: resourceError,
@@ -94,7 +94,7 @@ export function HomePage({ resourceRenderer }: HomePageProps = {}) {
         </div>
 
         <ResourceViewer
-          resource={resource}
+          resource={htmlResource}
           isLoading={resourceLoading}
           isFetching={resourceFetching}
           error={resourceError}
@@ -104,6 +104,24 @@ export function HomePage({ resourceRenderer }: HomePageProps = {}) {
           }}
           renderer={resourceRenderer}
         />
+
+        {remoteDomResource ? (
+          <section>
+            <h3 style={{ marginBottom: 12 }}>Experimento Remote DOM</h3>
+            <p className="panel__description">
+              El recurso remoto utiliza el modo <code>remote-dom</code> del SDK para renderizar
+              componentes Web Components.
+            </p>
+            <ResourceViewer
+              resource={remoteDomResource}
+              isLoading={false}
+              isFetching={resourceFetching}
+              error={null}
+              onAction={handleAction}
+              renderer={resourceRenderer}
+            />
+          </section>
+        ) : null}
 
         {hasResource && details ? (
           <section>

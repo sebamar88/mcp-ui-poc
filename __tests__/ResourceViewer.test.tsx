@@ -1,9 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 
-import { ResourceViewer } from '#src/components/mcp/ResourceViewer'
+import { ResourceViewer, type MCPUIRendererComponent } from '#src/components/mcp/ResourceViewer'
 import type { UIResource } from '#src/types/ui'
-import type { UIResourceRendererProps } from '@mcp-ui/client'
 
 const sampleResource: UIResource = {
   type: 'resource',
@@ -14,7 +13,7 @@ const sampleResource: UIResource = {
   },
 }
 
-function MockRenderer({ onUIAction }: UIResourceRendererProps) {
+const MockRenderer: MCPUIRendererComponent = ({ onUIAction }) => {
   return (
     <button
       data-testid="mock-renderer"

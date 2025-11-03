@@ -1,10 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
 
 import { QueryClient } from '@tanstack/react-query'
 
 import { HttpError } from '#src/api/httpClient'
-import type { UIResourceRendererProps } from '@mcp-ui/client'
+import type { MCPUIRendererComponent } from '#src/components/mcp/ResourceViewer'
 import { renderWithProviders } from './utils/renderWithProviders'
 
 const serviceMocks = vi.hoisted(() => ({
@@ -19,7 +19,7 @@ const fetchPostDetailsMock = serviceMocks.fetchPostDetails
 
 import { HomePage } from '#src/pages/home/HomePage'
 
-const MockRenderer = ({ onUIAction }: UIResourceRendererProps) => (
+const MockRenderer: MCPUIRendererComponent = ({ onUIAction }) => (
   <button
     data-testid="mock-renderer"
     onClick={() => onUIAction?.({ type: 'notify', payload: { message: 'mock-notify' } })}
@@ -114,9 +114,14 @@ describe('HomePage integration', () => {
 
     renderWithProviders(<HomePage resourceRenderer={MockRenderer} />, { client })
 
-    fireEvent.click(await screen.findByTestId('mock-renderer'))
+    const renderers = await screen.findAllByTestId('mock-renderer')
+    renderers.forEach((button) => {
+      fireEvent.click(button)
+    })
 
-    expect(await screen.findByText('Notificación')).toBeInTheDocument()
-    expect(screen.getByText(/mock-notify/)).toBeInTheDocument()
+    const notifications = await screen.findAllByText('Notificación')
+    expect(notifications.length).toBeGreaterThanOrEqual(1)
+    const payloads = screen.getAllByText(/mock-notify/)
+    expect(payloads.length).toBeGreaterThanOrEqual(1)
   })
 })
