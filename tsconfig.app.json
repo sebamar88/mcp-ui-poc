@@ -15,6 +15,7 @@
         "moduleDetection": "force",
         "noEmit": true,
         "jsx": "react-jsx",
+
         "paths": {
             "#src/*": ["./src/*"]
         },
@@ -27,5 +28,6 @@
         "noFallthroughCasesInSwitch": true,
         "noUncheckedSideEffectImports": true
     },
+    "extends": "./tsconfig.json",
     "include": ["src"]
 }

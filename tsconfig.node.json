@@ -14,10 +14,6 @@
         "moduleDetection": "force",
         "noEmit": true,
         "jsx": "react-jsx",
-        "baseUrl": ".",
-        "paths": {
-            "#src/*": ["src/*"]
-        },
 
         /* Linting */
         "strict": true,
@@ -33,5 +29,6 @@
         "api/**/*.ts",
         "__tests__/**/*.ts",
         "__tests__/**/*.tsx"
-    ]
+    ],
+    "extends": "./tsconfig.json"
 }
