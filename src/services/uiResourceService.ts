@@ -201,35 +201,57 @@ export function buildPostRemoteDomResource(details: PostDetails): UIResource {
   const remoteScript = `
 const data = ${JSON.stringify(payload)};
 
-const card = document.createElement('ui-card');
-card.setAttribute('padding', 'xl');
-card.setAttribute('bordered', 'true');
-card.setAttribute('title', 'Remote DOM – Perfil de ' + data.author);
+const container = document.createElement('div');
+container.style.background = 'linear-gradient(135deg,#1d4ed8 0%,#3b82f6 100%)';
+container.style.borderRadius = '18px';
+container.style.padding = '24px';
+container.style.color = '#f8fafc';
+container.style.boxShadow = '0 18px 40px -24px rgba(30,58,138,0.8)';
+container.style.display = 'flex';
+container.style.flexDirection = 'column';
+container.style.gap = '12px';
 
-const stack = document.createElement('ui-stack');
-stack.setAttribute('direction', 'vertical');
-stack.setAttribute('spacing', 'md');
+const title = document.createElement('h3');
+title.textContent = 'Remote DOM · ' + data.author;
+title.style.margin = '0';
 
-const subtitle = document.createElement('ui-text');
-subtitle.setAttribute('variant', 'subtitle');
-subtitle.textContent = 'Usuario @' + data.username + ' · ' + data.company;
+const subtitle = document.createElement('p');
+subtitle.textContent = '@' + data.username + ' · ' + data.company;
+subtitle.style.margin = '0';
+subtitle.style.opacity = '0.8';
 
-const description = document.createElement('ui-text');
-description.textContent = 'Este recurso se renderiza usando Remote DOM y puede reaccionar en vivo a las acciones.';
+const description = document.createElement('p');
+description.textContent = 'Este recurso se genera con remote-dom y puede comunicarse con el host mediante postMessage.';
+description.style.margin = '0';
 
-const notifyButton = document.createElement('ui-button');
-notifyButton.setAttribute('label', 'Notificar autor');
-notifyButton.addEventListener('press', () => {
+const buttonRow = document.createElement('div');
+buttonRow.style.display = 'flex';
+buttonRow.style.gap = '12px';
+
+const notifyButton = document.createElement('button');
+notifyButton.textContent = 'Notificar autor';
+notifyButton.style.padding = '10px 18px';
+notifyButton.style.borderRadius = '999px';
+notifyButton.style.border = 'none';
+notifyButton.style.cursor = 'pointer';
+notifyButton.style.background = 'rgba(248,250,252,0.18)';
+notifyButton.style.color = '#f8fafc';
+notifyButton.addEventListener('click', () => {
   window.parent?.postMessage({
     type: 'notify',
     payload: { message: 'Remote DOM: avisamos a ' + data.author }
   }, '*');
 });
 
-const toolButton = document.createElement('ui-button');
-toolButton.setAttribute('label', 'Solicitar datos extra');
-toolButton.setAttribute('tone', 'critical');
-toolButton.addEventListener('press', () => {
+const toolButton = document.createElement('button');
+toolButton.textContent = 'Solicitar datos extra';
+toolButton.style.padding = '10px 18px';
+toolButton.style.borderRadius = '999px';
+toolButton.style.border = '1px solid rgba(248,250,252,0.45)';
+toolButton.style.cursor = 'pointer';
+toolButton.style.background = 'transparent';
+toolButton.style.color = '#f8fafc';
+toolButton.addEventListener('click', () => {
   window.parent?.postMessage({
     type: 'tool',
     payload: {
@@ -239,12 +261,14 @@ toolButton.addEventListener('press', () => {
   }, '*');
 });
 
-stack.appendChild(subtitle);
-stack.appendChild(description);
-stack.appendChild(notifyButton);
-stack.appendChild(toolButton);
-card.appendChild(stack);
-root.appendChild(card);
+buttonRow.appendChild(notifyButton);
+buttonRow.appendChild(toolButton);
+
+container.appendChild(title);
+container.appendChild(subtitle);
+container.appendChild(description);
+container.appendChild(buttonRow);
+root.appendChild(container);
 `
 
   return {

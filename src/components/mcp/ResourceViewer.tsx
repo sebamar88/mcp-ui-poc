@@ -1,4 +1,4 @@
-import { UIResourceRenderer } from '@mcp-ui/client'
+import { UIResourceRenderer, basicComponentLibrary } from '@mcp-ui/client'
 
 import { ErrorCallout } from '#src/components/feedback/ErrorCallout'
 import type { UIAction, UIResource } from '#src/types/ui'
@@ -15,6 +15,7 @@ interface ResourceViewerProps {
   onAction: (action: UIAction) => void
   onRetry?: () => void
   renderer?: MCPUIRendererComponent
+  remoteDomProps?: Parameters<typeof UIResourceRenderer>[0]['remoteDomProps']
 }
 
 export function ResourceViewer({
@@ -25,6 +26,7 @@ export function ResourceViewer({
   onAction,
   onRetry,
   renderer,
+  remoteDomProps,
 }: ResourceViewerProps) {
   if (isLoading && !resource) {
     return <p>Cargando recurso dinámico…</p>
@@ -44,6 +46,10 @@ export function ResourceViewer({
   }
 
   const Renderer = renderer ?? (UIResourceRenderer as MCPUIRendererComponent)
+  const resolvedRemoteDomProps =
+    remoteDomProps ?? {
+      library: basicComponentLibrary,
+    }
 
   return (
     <div className="resource-wrapper">
@@ -57,6 +63,7 @@ export function ResourceViewer({
           autoResizeIframe: { height: true },
           style: { width: '100%', minHeight: '360px' },
         }}
+        remoteDomProps={resolvedRemoteDomProps}
       />
     </div>
   )
