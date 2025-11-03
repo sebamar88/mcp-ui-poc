@@ -1,10 +1,146 @@
 import type { IncomingMessage, ServerResponse } from 'http'
 
-import {
-  buildPostRemoteDomResource,
-  buildPostSummaryResource,
-} from '#src/services/uiResourceService'
-import { fetchPostDetails } from '#src/services/postService'
+// Tipos básicos para los datos
+interface Post {
+  id: number
+  title: string
+  body: string
+  userId: number
+}
+
+interface Comment {
+  id: number
+  postId: number
+  name: string
+  email: string
+  body: string
+}
+
+interface User {
+  id: number
+  name: string
+  email: string
+}
+
+interface PostDetails {
+  post: Post
+  comments: Comment[]
+  user: User
+}
+
+// Vamos a copiar las funciones necesarias directamente aquí para evitar problemas de imports
+async function fetchPostDetails(postId: number): Promise<PostDetails> {
+  const [postResponse, commentsResponse, userResponse] = await Promise.all([
+    fetch(`https://jsonplaceholder.typicode.com/posts/${postId}`),
+    fetch(`https://jsonplaceholder.typicode.com/posts/${postId}/comments`),
+    fetch(`https://jsonplaceholder.typicode.com/posts/${postId}`).then(r => r.json()).then(post => 
+      fetch(`https://jsonplaceholder.typicode.com/users/${post.userId}`)
+    )
+  ])
+
+  const [post, comments, user] = await Promise.all([
+    postResponse.json(),
+    commentsResponse.json(),
+    userResponse.json()
+  ])
+
+  return { post, comments, user }
+}
+
+function buildPostSummaryResource(details: PostDetails) {
+  const { post, comments, user } = details
+  
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h1 style="color: #333; border-bottom: 2px solid #007acc; padding-bottom: 10px;">
+        ${post.title}
+      </h1>
+      <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0; line-height: 1.6;">${post.body}</p>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin: 20px 0; padding: 10px; background: #e8f4fd; border-radius: 5px;">
+        <span style="font-weight: bold;">Autor: ${user.name}</span>
+        <span style="color: #666;">${comments.length} comentarios</span>
+      </div>
+    </div>
+  `
+
+  return {
+    resource: {
+      uri: `urn:post:${post.id}:summary`,
+      mimeType: 'text/html',
+      text: htmlContent
+    }
+  }
+}
+
+function buildPostRemoteDomResource(details: PostDetails) {
+  const { post, comments, user } = details
+  
+  const remoteDomContent = `
+    import { createElement } from 'react';
+    
+    export default function PostSummary() {
+      return createElement('div', {
+        style: {
+          fontFamily: 'Arial, sans-serif',
+          maxWidth: '600px',
+          margin: '0 auto',
+          padding: '20px'
+        }
+      }, [
+        createElement('h1', {
+          key: 'title',
+          style: {
+            color: '#333',
+            borderBottom: '2px solid #007acc',
+            paddingBottom: '10px'
+          }
+        }, '${post.title}'),
+        createElement('div', {
+          key: 'body',
+          style: {
+            background: '#f5f5f5',
+            padding: '15px',
+            borderRadius: '8px',
+            margin: '20px 0'
+          }
+        }, createElement('p', {
+          style: { margin: 0, lineHeight: 1.6 }
+        }, '${post.body}')),
+        createElement('div', {
+          key: 'meta',
+          style: {
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            margin: '20px 0',
+            padding: '10px',
+            background: '#e8f4fd',
+            borderRadius: '5px'
+          }
+        }, [
+          createElement('span', {
+            key: 'author',
+            style: { fontWeight: 'bold' }
+          }, 'Autor: ${user.name}'),
+          createElement('span', {
+            key: 'comments',
+            style: { color: '#666' }
+          }, '${comments.length} comentarios')
+        ])
+      ]);
+    }
+  `
+
+  return {
+    resource: {
+      uri: `urn:post:${post.id}:remote-dom`,
+      mimeType: 'application/vnd.mcp-ui.remote-dom',
+      text: remoteDomContent
+    }
+  }
+}
 
 type VercelRequest = IncomingMessage & {
   query: Record<string, string | string[] | undefined>
