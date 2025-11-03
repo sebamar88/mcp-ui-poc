@@ -5,6 +5,7 @@ import {
     ResourceViewer,
     type MCPUIRendererComponent,
 } from "#src/components/mcp/ResourceViewer";
+import { SSEResourceViewer } from "#src/components/mcp/SSEResourceViewer";
 import { PostList } from "#src/components/posts/PostList";
 import { usePostResource } from "#src/hooks/usePostResource";
 import { usePosts } from "#src/hooks/usePosts";
@@ -154,6 +155,12 @@ export function HomePage({ resourceRenderer }: HomePageProps = {}) {
                         </ul>
                     </section>
                 ) : null}
+
+                {/* Componente SSE */}
+                <SSEResourceViewer 
+                    postId={selectedPostId}
+                    onAction={handleAction}
+                />
 
                 <section>
                     <h3 style={{ marginBottom: 12 }}>Bitácora de acciones</h3>
