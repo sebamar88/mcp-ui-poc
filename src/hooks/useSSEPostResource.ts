@@ -53,7 +53,7 @@ export function useSSEPostResource(
         }));
 
         // Crear nueva conexión SSE
-        const url = `/api/sse?postId=${postId}&mode=${mode}`;
+        const url = `https://mcp-ui-poc-ten.vercel.app/api/sse?postId=${postId}&mode=${mode}`;
         const eventSource = new EventSource(url);
         eventSourceRef.current = eventSource;
 
