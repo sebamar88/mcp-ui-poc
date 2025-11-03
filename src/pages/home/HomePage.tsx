@@ -114,9 +114,10 @@ export function HomePage({ resourceRenderer }: HomePageProps = {}) {
                             Experimento Remote DOM
                         </h3>
                         <p className="panel__description">
-                            El recurso simula el comportamiento de{" "}
-                            <code>remote-dom</code> usando un iframe HTML regular
-                            que puede comunicarse con el host mediante postMessage.
+                            El recurso utiliza el modo <code>remote-dom</code>{" "}
+                            del SDK de MCP-UI para renderizar componentes
+                            directamente mediante JavaScript en un contexto
+                            sandboxed.
                         </p>
                         <ResourceViewer
                             resource={remoteDomResource}
@@ -132,7 +133,7 @@ export function HomePage({ resourceRenderer }: HomePageProps = {}) {
                         <h3 style={{ marginBottom: 12 }}>
                             Experimento Remote DOM
                         </h3>
-                        <p style={{ color: '#666', fontStyle: 'italic' }}>
+                        <p style={{ color: "#666", fontStyle: "italic" }}>
                             Recurso Remote DOM no disponible
                         </p>
                     </section>

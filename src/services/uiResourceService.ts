@@ -118,6 +118,7 @@ export function buildPostSummaryResource(details: PostDetails): UIResource {
         <span>Autor: ${escapeHtml(user.name)} (@${escapeHtml(
         user.username
     )})</span>
+    <span>Company: ${escapeHtml(user.company?.name ?? "No disponible")}</span>
         <span>Contacto: ${escapeHtml(user.email ?? "No disponible")}</span>
       </header>
       <section>
@@ -191,103 +192,118 @@ export function buildPostSummaryResource(details: PostDetails): UIResource {
     };
 }
 
-const REMOTE_DOM_VERSION = 'v4'
+const REMOTE_DOM_VERSION = "v4";
 
 export function buildPostRemoteDomResource(details: PostDetails): UIResource {
-  const { post, user } = details
-  const payload = {
-    postId: post.id,
-    author: user.name,
-    company: user.company?.name ?? 'Sin compañía',
-    username: user.username,
-  }
+    const { post, user } = details;
+    const payload = {
+        postId: post.id,
+        author: user.name,
+        company: user.company?.name ?? "Sin compañía",
+        username: user.username,
+    };
 
-  return {
-    type: 'resource',
-    resource: {
-      uri: `ui://posts/${post.id}/remote-dom?rev=${REMOTE_DOM_VERSION}`,
-      mimeType: 'text/html',
-      text: `<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <style>
-    body {
-      margin: 0;
-      padding: 20px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #1d4ed8, #3b82f6);
-      color: white;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .container {
-      text-align: center;
-      padding: 30px;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    }
-    h2 { margin: 0 0 15px 0; font-size: 24px; }
-    p { margin: 0 0 10px 0; opacity: 0.9; }
-    button {
-      margin: 15px 5px 0;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-      cursor: pointer;
-      font-weight: 500;
-      transition: background 0.2s;
-    }
-    button:hover {
-      background: rgba(255, 255, 255, 0.3);
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h2>🎉 Simulación Remote DOM</h2>
-    <p>Autor: ${escapeHtml(payload.author)}</p>
-    <p>Usuario: @${escapeHtml(payload.username)}</p>
-    <p>Compañía: ${escapeHtml(payload.company)}</p>
-    <p>Post ID: ${payload.postId}</p>
-    <button onclick="sendNotification()">Enviar Notificación</button>
-    <button onclick="callTool()">Llamar Herramienta</button>
-  </div>
-  
-  <script>
-    const data = ${JSON.stringify(payload)};
-    
-    function sendNotification() {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({
-          type: 'notify',
-          payload: { message: '✅ Notificación desde: ' + data.author }
-        }, '*');
-      }
-    }
-    
-    function callTool() {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({
-          type: 'tool',
-          payload: {
-            toolName: 'loadExtendedProfile',
-            params: { postId: data.postId, username: data.username }
-          }
-        }, '*');
-      }
-    }
-    
-    console.log('✅ Simulación Remote DOM cargada para:', data.author);
-  </script>
-</body>
-</html>`,
-    },
+    return {
+        type: "resource",
+        resource: {
+            uri: `ui://posts/${post.id}/remote-dom?rev=${REMOTE_DOM_VERSION}`,
+            mimeType: "application/vnd.mcp-ui.remote-dom",
+            text: `
+// Remote DOM Script para ${payload.author}
+const data = ${JSON.stringify(payload)};
+
+// Crear contenedor principal
+const container = document.createElement('div');
+container.style.cssText = \`
+  padding: 24px;
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+  border-radius: 16px;
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+\`;
+
+// Título
+const title = document.createElement('h2');
+title.textContent = '🎉 Remote DOM Real - ' + data.author;
+title.style.cssText = 'margin: 0 0 16px 0; font-size: 22px; font-weight: 600;';
+
+// Información del usuario
+const userInfo = document.createElement('p');
+userInfo.textContent = '@' + data.username + ' · ' + data.company;
+userInfo.style.cssText = 'margin: 0 0 8px 0; opacity: 0.9; font-size: 16px;';
+
+// ID del post
+const postInfo = document.createElement('p');
+postInfo.textContent = 'Post ID: ' + data.postId;
+postInfo.style.cssText = 'margin: 0 0 20px 0; opacity: 0.8; font-size: 14px;';
+
+// Botón de notificación
+const notifyBtn = document.createElement('button');
+notifyBtn.textContent = 'Enviar Notificación';
+notifyBtn.style.cssText = \`
+  margin: 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s;
+\`;
+
+notifyBtn.addEventListener('click', function() {
+  console.log('📨 Enviando notificación...');
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({
+      type: 'notify',
+      payload: { message: '✅ Notificación Remote DOM: ' + data.author }
+    }, '*');
   }
+});
+
+// Botón de herramienta
+const toolBtn = document.createElement('button');
+toolBtn.textContent = 'Ejecutar Tool';
+toolBtn.style.cssText = \`
+  margin: 8px;
+  padding: 12px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  background: transparent;
+  color: white;
+  cursor: pointer;
+  font-weight: 500;
+\`;
+
+toolBtn.addEventListener('click', function() {
+  console.log('🔧 Ejecutando herramienta...');
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({
+      type: 'tool',
+      payload: {
+        toolName: 'loadExtendedProfile',
+        params: { postId: data.postId, username: data.username }
+      }
+    }, '*');
+  }
+});
+
+// Ensamblar el DOM
+container.appendChild(title);
+container.appendChild(userInfo);
+container.appendChild(postInfo);
+container.appendChild(notifyBtn);
+container.appendChild(toolBtn);
+
+// Agregar al body
+document.body.style.cssText = 'margin: 0; padding: 16px; background: #f8fafc;';
+document.body.appendChild(container);
+
+console.log('✅ Remote DOM inicializado para:', data.author);
+`,
+        },
+    };
 }

@@ -46,7 +46,7 @@ export function ResourceViewer({
     const Renderer = renderer ?? (UIResourceRenderer as MCPUIRendererComponent);
 
     // Detectar si es un recurso Remote DOM
-    const isRemoteDom = resource.resource.mimeType?.includes('remote-dom');
+    const isRemoteDom = resource.resource.mimeType?.includes("remote-dom");
 
     return (
         <div className="resource-wrapper">
@@ -58,13 +58,13 @@ export function ResourceViewer({
                 onUIAction={handleUIAction}
                 htmlProps={{
                     autoResizeIframe: { height: true },
-                    style: { 
-                        width: "100%", 
+                    style: {
+                        width: "100%",
                         minHeight: "360px",
-                        ...(isRemoteDom && { 
+                        ...(isRemoteDom && {
                             display: "block",
-                            visibility: "visible" 
-                        })
+                            visibility: "visible",
+                        }),
                     },
                 }}
                 remoteDomProps={{ library: basicComponentLibrary }}
