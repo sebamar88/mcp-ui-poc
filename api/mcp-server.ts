@@ -242,92 +242,115 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
         let body = "";
 
-        // Leer el cuerpo de la request
-        req.on("data", (chunk) => {
-            body += chunk.toString();
-        });
+        // Usar req.body si está disponible (Vercel lo parsea automáticamente)
+        if (req.body) {
+            body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+            await processRequest(body, res);
+        } else {
+            // Fallback para leer manualmente
+            req.on("data", (chunk) => {
+                body += chunk.toString();
+            });
 
-        req.on("end", async () => {
-            try {
-                const request: JSONRPCRequest = JSON.parse(body);
-
-                // Validar JSON-RPC
-                if (request.jsonrpc !== "2.0") {
-                    res.status(400).json(
-                        createErrorResponse(
-                            request.id || null,
-                            -32600,
-                            "JSON-RPC inválido"
-                        )
-                    );
-                    return;
-                }
-
-                const response: JSONRPCResponse = {
-                    jsonrpc: "2.0",
-                    id: request.id || null,
-                };
-
-                try {
-                    switch (request.method) {
-                        case "resources/list":
-                            const resources = await handleListResources();
-                            response.result = { resources };
-                            break;
-
-                        case "resources/read":
-                            if (!request.params?.uri) {
-                                throw new Error("Parámetro 'uri' requerido");
-                            }
-                            const resource = await handleReadResource(
-                                request.params.uri
-                            );
-                            response.result = { contents: [resource] };
-                            break;
-
-                        case "initialize":
-                            response.result = {
-                                protocolVersion: "2024-11-05",
-                                capabilities: {
-                                    resources: {
-                                        subscribe: false,
-                                        listChanged: false,
-                                    },
-                                },
-                                serverInfo: {
-                                    name: "Posts MCP Server",
-                                    version: "1.0.0",
-                                },
-                            };
-                            break;
-
-                        default:
-                            throw new Error(
-                                `Método no implementado: ${request.method}`
-                            );
-                    }
-                } catch (error) {
-                    const message =
-                        error instanceof Error
-                            ? error.message
-                            : "Error interno del servidor";
-                    response.error = {
-                        code: -32603,
-                        message,
-                    };
-                    delete response.result;
-                }
-
-                res.status(200).json(response);
-            } catch (parseError) {
-                res.status(400).json(
-                    createErrorResponse(null, -32700, "Error de parsing JSON")
-                );
-            }
-        });
+            req.on("end", async () => {
+                await processRequest(body, res);
+            });
+        }
     } catch (error) {
         res.status(500).json(
             createErrorResponse(null, -32603, "Error interno del servidor")
+        );
+    }
+}
+
+async function processRequest(body: string, res: VercelResponse) {
+    try {
+        const request: JSONRPCRequest = JSON.parse(body);
+
+        // Validar JSON-RPC básico
+        if (request.jsonrpc !== "2.0") {
+            res.status(400).json(
+                createErrorResponse(
+                    request.id !== undefined ? request.id : null,
+                    -32600,
+                    "JSON-RPC inválido"
+                )
+            );
+            return;
+        }
+
+        if (!request.method) {
+            res.status(400).json(
+                createErrorResponse(
+                    request.id !== undefined ? request.id : null,
+                    -32601,
+                    "Método requerido"
+                )
+            );
+            return;
+        }
+
+        const response: JSONRPCResponse = {
+            jsonrpc: "2.0",
+            id: request.id !== undefined ? request.id : null,
+        };
+
+        try {
+            switch (request.method) {
+                case "initialize":
+                    response.result = {
+                        protocolVersion: "2024-11-05",
+                        capabilities: {
+                            resources: {
+                                subscribe: false,
+                                listChanged: false,
+                            },
+                        },
+                        serverInfo: {
+                            name: "Posts MCP Server",
+                            version: "1.0.0",
+                        },
+                    };
+                    break;
+
+                case "resources/list":
+                    const resources = await handleListResources();
+                    response.result = { resources };
+                    break;
+
+                case "resources/read":
+                    if (!request.params?.uri) {
+                        throw new Error("Parámetro 'uri' requerido");
+                    }
+                    const resource = await handleReadResource(
+                        request.params.uri
+                    );
+                    response.result = { contents: [resource] };
+                    break;
+
+                default:
+                    response.error = {
+                        code: -32601,
+                        message: `Método no implementado: ${request.method}`,
+                    };
+                    break;
+            }
+        } catch (error) {
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : "Error interno del servidor";
+            response.error = {
+                code: -32603,
+                message,
+            };
+            delete response.result;
+        }
+
+        res.status(200).json(response);
+    } catch (parseError) {
+        res.status(400).json(
+            createErrorResponse(null, -32700, "Error de parsing JSON")
         );
     }
 }
