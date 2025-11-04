@@ -529,17 +529,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                                 description: `Análisis detallado del post #${post.id}`,
                                 messages: [
                                     {
-                                        role: "system",
-                                        content: {
-                                            type: "text",
-                                            text: "Eres un analista experto en contenido. Analiza el siguiente post y proporciona insights detallados sobre su tema, tono, posibles audiencias objetivo y calidad del contenido."
-                                        }
-                                    },
-                                    {
                                         role: "user",
                                         content: {
                                             type: "text",
-                                            text: `**Título**: ${post.title}\n\n**Contenido**: ${post.body}\n\n**Usuario ID**: ${post.userId}\n\nPor favor, analiza este post y proporciona:\n1. Resumen del tema principal\n2. Tono y estilo del contenido\n3. Posible audiencia objetivo\n4. Calidad y claridad del mensaje\n5. Sugerencias de mejora si las hay`
+                                            text: `Eres un analista experto en contenido. Analiza el siguiente post y proporciona insights detallados sobre su tema, tono, posibles audiencias objetivo y calidad del contenido.\n\n**Título**: ${post.title}\n\n**Contenido**: ${post.body}\n\n**Usuario ID**: ${post.userId}\n\nPor favor, analiza este post y proporciona:\n1. Resumen del tema principal\n2. Tono y estilo del contenido\n3. Posible audiencia objetivo\n4. Calidad y claridad del mensaje\n5. Sugerencias de mejora si las hay`
                                         }
                                     }
                                 ]
@@ -566,17 +559,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                                 description: `Resumen de ${posts.length} posts recientes`,
                                 messages: [
                                     {
-                                        role: "system",
-                                        content: {
-                                            type: "text",
-                                            text: "Eres un experto en análisis de contenido. Crea un resumen conciso y útil de los siguientes posts, identificando temas comunes, tendencias y insights clave."
-                                        }
-                                    },
-                                    {
                                         role: "user",
                                         content: {
                                             type: "text",
-                                            text: `Aquí tienes ${posts.length} posts para resumir:\n\n${postsText}\n\nPor favor, proporciona:\n1. Resumen general de los temas tratados\n2. Tendencias o patrones identificados\n3. Posts más destacados y por qué\n4. Insights principales que se pueden extraer`
+                                            text: `Eres un experto en análisis de contenido. Crea un resumen conciso y útil de los siguientes posts, identificando temas comunes, tendencias y insights clave.\n\nAquí tienes ${posts.length} posts para resumir:\n\n${postsText}\n\nPor favor, proporciona:\n1. Resumen general de los temas tratados\n2. Tendencias o patrones identificados\n3. Posts más destacados y por qué\n4. Insights principales que se pueden extraer`
                                         }
                                     }
                                 ]
