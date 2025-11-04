@@ -157,6 +157,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                             subscribe: false,
                             listChanged: false,
                         },
+                        prompts: {
+                            listChanged: false,
+                        },
+                        tools: {
+                            listChanged: false,
+                        },
                     },
                     serverInfo: {
                         name: "Simple Posts MCP Server",
@@ -234,6 +240,75 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         `,
                         },
                     ],
+                };
+                break;
+
+            case "prompts/list":
+                result = {
+                    prompts: [
+                        {
+                            name: "analyze-post",
+                            description: "Analiza un post específico y proporciona insights sobre su contenido",
+                            arguments: [
+                                {
+                                    name: "post_id",
+                                    description: "ID del post a analizar",
+                                    required: true,
+                                }
+                            ]
+                        },
+                        {
+                            name: "summarize-posts",
+                            description: "Crea un resumen de múltiples posts basado en criterios específicos",
+                            arguments: [
+                                {
+                                    name: "count",
+                                    description: "Número de posts a incluir en el resumen",
+                                    required: false,
+                                }
+                            ]
+                        }
+                    ]
+                };
+                break;
+
+            case "tools/list":
+                result = {
+                    tools: [
+                        {
+                            name: "get-post-stats",
+                            description: "Obtiene estadísticas detalladas de un post (palabra count, sentiment, etc.)",
+                            inputSchema: {
+                                type: "object",
+                                properties: {
+                                    post_id: {
+                                        type: "number",
+                                        description: "ID del post para obtener estadísticas"
+                                    }
+                                },
+                                required: ["post_id"]
+                            }
+                        },
+                        {
+                            name: "search-posts",
+                            description: "Busca posts que contengan términos específicos",
+                            inputSchema: {
+                                type: "object",
+                                properties: {
+                                    query: {
+                                        type: "string",
+                                        description: "Término de búsqueda"
+                                    },
+                                    limit: {
+                                        type: "number",
+                                        description: "Máximo número de resultados",
+                                        default: 5
+                                    }
+                                },
+                                required: ["query"]
+                            }
+                        }
+                    ]
                 };
                 break;
 
