@@ -27,7 +27,7 @@ export function SSEResourceViewer({
         >
             <div style={{ marginBottom: "16px" }}>
                 <h3 style={{ margin: "0 0 8px 0", color: "#333" }}>
-                    🔄 Servidor MCP con SSE
+                    � Servidor MCP (JSON-RPC)
                 </h3>
                 <p
                     style={{
@@ -36,7 +36,7 @@ export function SSEResourceViewer({
                         color: "#666",
                     }}
                 >
-                    Conexión en tiempo real con el endpoint SSE del servidor MCP
+                    Conexión directa con el servidor MCP usando protocolo JSON-RPC 2.0
                 </p>
 
                 {/* Controles */}
@@ -121,7 +121,7 @@ export function SSEResourceViewer({
                         marginBottom: "16px",
                     }}
                 >
-                    <strong>SSE Endpoint:</strong>{" "}
+                    <strong>MCP Endpoint:</strong>{" "}
                     <code
                         style={{
                             backgroundColor: "#f5f5f5",
@@ -129,9 +129,12 @@ export function SSEResourceViewer({
                             borderRadius: "3px",
                         }}
                     >
-                        https://mcp-ui-poc-ten.vercel.app/api/sse?postId=
-                        {postId}&mode={mode}
+                        https://mcp-ui-poc-ten.vercel.app/api/simple-mcp
                     </code>
+                    <br />
+                    <strong>Método:</strong> resources/read
+                    <br />
+                    <strong>URI:</strong> post://{postId}
                 </div>
             </div>
 
@@ -155,12 +158,12 @@ export function SSEResourceViewer({
                     }}
                 >
                     {isLoading
-                        ? "Esperando datos del SSE..."
+                        ? "Esperando datos del servidor MCP..."
                         : "No hay recurso disponible"}
                 </div>
             )}
 
-            {/* Log de mensajes SSE */}
+            {/* Log de mensajes MCP */}
             <details style={{ marginTop: "16px" }}>
                 <summary
                     style={{
@@ -169,7 +172,7 @@ export function SSEResourceViewer({
                         fontWeight: "bold",
                     }}
                 >
-                    📋 Log de mensajes SSE ({messages.length})
+                    📋 Log de mensajes MCP ({messages.length})
                 </summary>
                 <div
                     style={{
@@ -207,7 +210,7 @@ export function SSEResourceViewer({
                                         fontWeight: "bold",
                                     }}
                                 >
-                                    [{msg.event}]
+                                    [{msg.type}]
                                 </span>{" "}
                                 <span style={{ color: "#333" }}>
                                     {typeof msg.data === "string"

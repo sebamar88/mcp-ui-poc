@@ -1,32 +1,30 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { UIResource } from "#src/types/ui";
 
-interface SSEMessage {
-    event: string;
+interface MCPMessage {
+    type: string;
     data: unknown;
 }
 
-interface SSEState {
+interface MCPState {
     resource: UIResource | null;
     isConnected: boolean;
     isLoading: boolean;
     error: string | null;
-    messages: SSEMessage[];
+    messages: MCPMessage[];
 }
 
 export function useSSEPostResource(
     postId: number | null,
     mode: "html" | "remote" = "html"
 ) {
-    const [state, setState] = useState<SSEState>({
+    const [state, setState] = useState<MCPState>({
         resource: null,
         isConnected: false,
         isLoading: false,
         error: null,
         messages: [],
     });
-
-    const eventSourceRef = useRef<EventSource | null>(null);
 
     useEffect(() => {
         if (!postId) {
@@ -40,11 +38,6 @@ export function useSSEPostResource(
             return;
         }
 
-        // Cerrar conexión anterior si existe
-        if (eventSourceRef.current) {
-            eventSourceRef.current.close();
-        }
-
         setState((prev) => ({
             ...prev,
             isLoading: true,
@@ -52,103 +45,92 @@ export function useSSEPostResource(
             messages: [],
         }));
 
-        // Crear nueva conexión SSE
-        const url = `https://mcp-ui-poc-ten.vercel.app/api/sse?postId=${postId}&mode=${mode}`;
-        const eventSource = new EventSource(url);
-        eventSourceRef.current = eventSource;
+        // Función para llamar al protocolo MCP
+        const fetchPostFromMCP = async () => {
+            try {
+                setState((prev) => ({
+                    ...prev,
+                    messages: [...prev.messages, { type: "connecting", data: "Conectando al servidor MCP..." }],
+                }));
 
-        eventSource.onopen = () => {
-            setState((prev) => ({ ...prev, isConnected: true }));
-        };
+                // Primero obtenemos el recurso usando resources/read
+                const response = await fetch("https://mcp-ui-poc-ten.vercel.app/api/simple-mcp", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        jsonrpc: "2.0",
+                        method: "resources/read",
+                        params: {
+                            uri: `post://${postId}`,
+                        },
+                        id: 1,
+                    }),
+                });
 
-        eventSource.addEventListener("connected", (event) => {
-            const messageEvent = event as MessageEvent;
-            const data = JSON.parse(messageEvent.data);
-            setState((prev) => ({
-                ...prev,
-                messages: [...prev.messages, { event: "connected", data }],
-            }));
-        });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
 
-        eventSource.addEventListener("loading", (event) => {
-            const messageEvent = event as MessageEvent;
-            const data = JSON.parse(messageEvent.data);
-            setState((prev) => ({
-                ...prev,
-                messages: [...prev.messages, { event: "loading", data }],
-            }));
-        });
+                const result = await response.json();
 
-        eventSource.addEventListener("resource", (event) => {
-            const messageEvent = event as MessageEvent;
-            const resource = JSON.parse(messageEvent.data);
-            setState((prev) => ({
-                ...prev,
-                resource,
-                isLoading: false,
-                messages: [
-                    ...prev.messages,
-                    { event: "resource", data: "Resource received" },
-                ],
-            }));
-        });
+                setState((prev) => ({
+                    ...prev,
+                    isConnected: true,
+                    messages: [...prev.messages, { type: "connected", data: "Conectado al servidor MCP" }],
+                }));
 
-        eventSource.addEventListener("completed", (event) => {
-            const messageEvent = event as MessageEvent;
-            const data = JSON.parse(messageEvent.data);
-            setState((prev) => ({
-                ...prev,
-                messages: [...prev.messages, { event: "completed", data }],
-            }));
-        });
+                if (result.error) {
+                    throw new Error(result.error.message || "Error del servidor MCP");
+                }
 
-        eventSource.addEventListener("error", (event) => {
-            const messageEvent = event as MessageEvent;
-            const data = JSON.parse(messageEvent.data);
-            setState((prev) => ({
-                ...prev,
-                error: data.message,
-                isLoading: false,
-                messages: [...prev.messages, { event: "error", data }],
-            }));
-        });
+                if (result.result && result.result.contents) {
+                    const content = result.result.contents[0];
+                    
+                    // Crear el recurso UI compatible
+                    const uiResource: UIResource = {
+                        type: "resource",
+                        resource: {
+                            uri: `post://${postId}`,
+                            mimeType: content.mimeType || "text/html",
+                            text: content.text || content.blob || "",
+                        },
+                    };
 
-        eventSource.addEventListener("close", (event) => {
-            const messageEvent = event as MessageEvent;
-            const data = JSON.parse(messageEvent.data);
-            setState((prev) => ({
-                ...prev,
-                isConnected: false,
-                messages: [...prev.messages, { event: "close", data }],
-            }));
-            eventSource.close();
-        });
+                    setState((prev) => ({
+                        ...prev,
+                        resource: uiResource,
+                        isLoading: false,
+                        messages: [...prev.messages, { type: "resource", data: "Recurso recibido" }],
+                    }));
+                } else {
+                    throw new Error("No se encontró contenido en la respuesta");
+                }
 
-        eventSource.onerror = () => {
-            setState((prev) => ({
-                ...prev,
-                error: "Error de conexión SSE",
-                isLoading: false,
-                isConnected: false,
-            }));
-        };
-
-        // Cleanup
-        return () => {
-            if (eventSourceRef.current) {
-                eventSourceRef.current.close();
-                eventSourceRef.current = null;
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+                setState((prev) => ({
+                    ...prev,
+                    error: errorMessage,
+                    isLoading: false,
+                    isConnected: false,
+                    messages: [...prev.messages, { type: "error", data: errorMessage }],
+                }));
             }
         };
+
+        fetchPostFromMCP();
     }, [postId, mode]);
 
     // Función para reconectar manualmente
     const reconnect = () => {
-        if (eventSourceRef.current) {
-            eventSourceRef.current.close();
-        }
-        // Trigger re-render to restart the connection
-        setState((prev) => ({ ...prev, error: null }));
+        setState((prev) => ({ 
+            ...prev, 
+            error: null,
+            messages: [...prev.messages, { type: "reconnecting", data: "Reconectando..." }]
+        }));
+        // El useEffect se ejecutará de nuevo debido al cambio de estado
     };
 
     return {

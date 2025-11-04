@@ -107,8 +107,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Para simplicidad, también acepto GET con query params
     if (req.method === "GET") {
+        const limit = req.url
+            ? new URL(req.url, `http://${req.headers.host}`).searchParams.get(
+                  "limit"
+              )
+            : null;
+        console.log("🚀 ~ handler ~ limit:", limit);
         try {
-            const posts = await fetchPosts(10);
+            const posts = await fetchPosts(limit ? Number(limit) : undefined);
 
             const response = {
                 jsonrpc: "2.0",
@@ -249,7 +255,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 return;
 
             case "resources/list":
-                const posts = await fetchPosts(10);
+                const posts = await fetchPosts();
                 result = {
                     resources: posts.map((post: any) => ({
                         uri: `post://${post.id}`,
@@ -480,6 +486,115 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                                 toolError instanceof Error
                                     ? toolError.message
                                     : "Tool execution error",
+                        },
+                        id: id !== undefined ? id : 0,
+                    });
+                    return;
+                }
+                break;
+
+            case "prompts/get":
+                if (!params?.name) {
+                    res.status(400).json({
+                        jsonrpc: "2.0",
+                        error: {
+                            code: -32602,
+                            message: "Prompt name is required",
+                        },
+                        id: id !== undefined ? id : 0,
+                    });
+                    return;
+                }
+
+                const promptName = params.name;
+                const promptArgs = params.arguments || {};
+
+                try {
+                    switch (promptName) {
+                        case "analyze-post":
+                            if (!promptArgs.post_id) {
+                                throw new Error("post_id parameter is required");
+                            }
+                            
+                            // Obtener el post específico
+                            const postResponse = await fetch(
+                                `https://jsonplaceholder.typicode.com/posts/${promptArgs.post_id}`
+                            );
+                            if (!postResponse.ok) {
+                                throw new Error("Post not found");
+                            }
+                            const post = await postResponse.json();
+                            
+                            result = {
+                                description: `Análisis detallado del post #${post.id}`,
+                                messages: [
+                                    {
+                                        role: "system",
+                                        content: {
+                                            type: "text",
+                                            text: "Eres un analista experto en contenido. Analiza el siguiente post y proporciona insights detallados sobre su tema, tono, posibles audiencias objetivo y calidad del contenido."
+                                        }
+                                    },
+                                    {
+                                        role: "user",
+                                        content: {
+                                            type: "text",
+                                            text: `**Título**: ${post.title}\n\n**Contenido**: ${post.body}\n\n**Usuario ID**: ${post.userId}\n\nPor favor, analiza este post y proporciona:\n1. Resumen del tema principal\n2. Tono y estilo del contenido\n3. Posible audiencia objetivo\n4. Calidad y claridad del mensaje\n5. Sugerencias de mejora si las hay`
+                                        }
+                                    }
+                                ]
+                            };
+                            break;
+
+                        case "summarize-posts":
+                            const count = promptArgs.count || 5;
+                            
+                            // Obtener posts para resumir
+                            const postsResponse = await fetch(
+                                `https://jsonplaceholder.typicode.com/posts?_limit=${count}`
+                            );
+                            if (!postsResponse.ok) {
+                                throw new Error("Error fetching posts");
+                            }
+                            const posts = await postsResponse.json();
+                            
+                            const postsText = posts.map((p: any) => 
+                                `**Post #${p.id}**: ${p.title}\n${p.body}`
+                            ).join('\n\n---\n\n');
+                            
+                            result = {
+                                description: `Resumen de ${posts.length} posts recientes`,
+                                messages: [
+                                    {
+                                        role: "system",
+                                        content: {
+                                            type: "text",
+                                            text: "Eres un experto en análisis de contenido. Crea un resumen conciso y útil de los siguientes posts, identificando temas comunes, tendencias y insights clave."
+                                        }
+                                    },
+                                    {
+                                        role: "user",
+                                        content: {
+                                            type: "text",
+                                            text: `Aquí tienes ${posts.length} posts para resumir:\n\n${postsText}\n\nPor favor, proporciona:\n1. Resumen general de los temas tratados\n2. Tendencias o patrones identificados\n3. Posts más destacados y por qué\n4. Insights principales que se pueden extraer`
+                                        }
+                                    }
+                                ]
+                            };
+                            break;
+
+                        default:
+                            throw new Error(`Unknown prompt: ${promptName}`);
+                    }
+                } catch (promptError) {
+                    res.status(400).json({
+                        jsonrpc: "2.0",
+                        error: {
+                            code: -32603,
+                            message:
+                                promptError instanceof Error
+                                    ? promptError.message
+                                    : "Prompt execution error",
                         },
                         id: id !== undefined ? id : 0,
                     });
