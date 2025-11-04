@@ -10,9 +10,11 @@ type VercelResponse = ServerResponse & {
 };
 
 // Función simple para obtener posts
-async function fetchPosts(limit: number = 10) {
+async function fetchPosts(limit?: number) {
     const response = await fetch(
-        `https://jsonplaceholder.typicode.com/posts?_limit=${limit}`
+        `https://jsonplaceholder.typicode.com/posts${
+            limit ? `?_limit=${limit}` : ""
+        }`
     );
     return response.json();
 }
@@ -29,12 +31,13 @@ async function fetchPost(id: number) {
 async function searchPosts(query: string, limit: number = 5) {
     const response = await fetch(`https://jsonplaceholder.typicode.com/posts`);
     const allPosts = await response.json();
-    
-    const filtered = allPosts.filter((post: any) => 
-        post.title.toLowerCase().includes(query.toLowerCase()) ||
-        post.body.toLowerCase().includes(query.toLowerCase())
+
+    const filtered = allPosts.filter(
+        (post: any) =>
+            post.title.toLowerCase().includes(query.toLowerCase()) ||
+            post.body.toLowerCase().includes(query.toLowerCase())
     );
-    
+
     return filtered.slice(0, limit);
 }
 
@@ -43,19 +46,41 @@ async function getPostStats(postId: number) {
     const post = await fetchPost(postId);
     const wordCount = post.body.split(/\s+/).length;
     const titleWordCount = post.title.split(/\s+/).length;
-    
+
     // Análisis de sentimiento básico (simulado)
-    const positiveWords = ['good', 'great', 'excellent', 'amazing', 'wonderful', 'fantastic', 'perfect'];
-    const negativeWords = ['bad', 'terrible', 'awful', 'horrible', 'wrong', 'error', 'problem'];
-    
-    const text = (post.title + ' ' + post.body).toLowerCase();
-    const positiveCount = positiveWords.reduce((count, word) => count + (text.split(word).length - 1), 0);
-    const negativeCount = negativeWords.reduce((count, word) => count + (text.split(word).length - 1), 0);
-    
-    let sentiment = 'neutral';
-    if (positiveCount > negativeCount) sentiment = 'positive';
-    else if (negativeCount > positiveCount) sentiment = 'negative';
-    
+    const positiveWords = [
+        "good",
+        "great",
+        "excellent",
+        "amazing",
+        "wonderful",
+        "fantastic",
+        "perfect",
+    ];
+    const negativeWords = [
+        "bad",
+        "terrible",
+        "awful",
+        "horrible",
+        "wrong",
+        "error",
+        "problem",
+    ];
+
+    const text = (post.title + " " + post.body).toLowerCase();
+    const positiveCount = positiveWords.reduce(
+        (count, word) => count + (text.split(word).length - 1),
+        0
+    );
+    const negativeCount = negativeWords.reduce(
+        (count, word) => count + (text.split(word).length - 1),
+        0
+    );
+
+    let sentiment = "neutral";
+    if (positiveCount > negativeCount) sentiment = "positive";
+    else if (negativeCount > positiveCount) sentiment = "negative";
+
     return {
         postId: post.id,
         title: post.title,
@@ -65,7 +90,7 @@ async function getPostStats(postId: number) {
         sentiment,
         positiveWords: positiveCount,
         negativeWords: negativeCount,
-        userId: post.userId
+        userId: post.userId,
     };
 }
 
@@ -292,27 +317,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     prompts: [
                         {
                             name: "analyze-post",
-                            description: "Analiza un post específico y proporciona insights sobre su contenido",
+                            description:
+                                "Analiza un post específico y proporciona insights sobre su contenido",
                             arguments: [
                                 {
                                     name: "post_id",
                                     description: "ID del post a analizar",
                                     required: true,
-                                }
-                            ]
+                                },
+                            ],
                         },
                         {
                             name: "summarize-posts",
-                            description: "Crea un resumen de múltiples posts basado en criterios específicos",
+                            description:
+                                "Crea un resumen de múltiples posts basado en criterios específicos",
                             arguments: [
                                 {
                                     name: "count",
-                                    description: "Número de posts a incluir en el resumen",
+                                    description:
+                                        "Número de posts a incluir en el resumen",
                                     required: false,
-                                }
-                            ]
-                        }
-                    ]
+                                },
+                            ],
+                        },
+                    ],
                 };
                 break;
 
@@ -321,38 +349,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     tools: [
                         {
                             name: "get-post-stats",
-                            description: "Obtiene estadísticas detalladas de un post (palabra count, sentiment, etc.)",
+                            description:
+                                "Obtiene estadísticas detalladas de un post (palabra count, sentiment, etc.)",
                             inputSchema: {
                                 type: "object",
                                 properties: {
                                     post_id: {
                                         type: "number",
-                                        description: "ID del post para obtener estadísticas"
-                                    }
+                                        description:
+                                            "ID del post para obtener estadísticas",
+                                    },
                                 },
-                                required: ["post_id"]
-                            }
+                                required: ["post_id"],
+                            },
                         },
                         {
                             name: "search-posts",
-                            description: "Busca posts que contengan términos específicos",
+                            description:
+                                "Busca posts que contengan términos específicos",
                             inputSchema: {
                                 type: "object",
                                 properties: {
                                     query: {
                                         type: "string",
-                                        description: "Término de búsqueda"
+                                        description: "Término de búsqueda",
                                     },
                                     limit: {
                                         type: "number",
-                                        description: "Máximo número de resultados",
-                                        default: 5
-                                    }
+                                        description:
+                                            "Máximo número de resultados",
+                                        default: 5,
+                                    },
                                 },
-                                required: ["query"]
-                            }
-                        }
-                    ]
+                                required: ["query"],
+                            },
+                        },
+                    ],
                 };
                 break;
 
@@ -362,7 +394,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         jsonrpc: "2.0",
                         error: {
                             code: -32602,
-                            message: "Tool name is required"
+                            message: "Tool name is required",
                         },
                         id: id !== undefined ? id : 0,
                     });
@@ -378,41 +410,61 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                             if (!toolArgs.query) {
                                 throw new Error("Query parameter is required");
                             }
-                            const searchResults = await searchPosts(toolArgs.query, toolArgs.limit || 5);
+                            const searchResults = await searchPosts(
+                                toolArgs.query,
+                                toolArgs.limit || 5
+                            );
                             result = {
                                 content: [
                                     {
                                         type: "text",
-                                        text: `Encontrados ${searchResults.length} posts que contienen "${toolArgs.query}":\n\n` +
-                                              searchResults.map((post: any, index: number) => 
-                                                `${index + 1}. **Post #${post.id}**: ${post.title}\n` +
-                                                `   ${post.body.substring(0, 100)}...\n`
-                                              ).join('\n')
-                                    }
-                                ]
+                                        text:
+                                            `Encontrados ${searchResults.length} posts que contienen "${toolArgs.query}":\n\n` +
+                                            searchResults
+                                                .map(
+                                                    (
+                                                        post: any,
+                                                        index: number
+                                                    ) =>
+                                                        `${
+                                                            index + 1
+                                                        }. **Post #${
+                                                            post.id
+                                                        }**: ${post.title}\n` +
+                                                        `   ${post.body.substring(
+                                                            0,
+                                                            100
+                                                        )}...\n`
+                                                )
+                                                .join("\n"),
+                                    },
+                                ],
                             };
                             break;
 
                         case "get-post-stats":
                             if (!toolArgs.post_id) {
-                                throw new Error("post_id parameter is required");
+                                throw new Error(
+                                    "post_id parameter is required"
+                                );
                             }
                             const stats = await getPostStats(toolArgs.post_id);
                             result = {
                                 content: [
                                     {
                                         type: "text",
-                                        text: `📊 **Estadísticas del Post #${stats.postId}**\n\n` +
-                                              `**Título**: ${stats.title}\n` +
-                                              `**Palabras en título**: ${stats.titleWordCount}\n` +
-                                              `**Palabras en contenido**: ${stats.wordCount}\n` +
-                                              `**Total de palabras**: ${stats.totalWords}\n` +
-                                              `**Sentimiento**: ${stats.sentiment}\n` +
-                                              `**Palabras positivas**: ${stats.positiveWords}\n` +
-                                              `**Palabras negativas**: ${stats.negativeWords}\n` +
-                                              `**Usuario ID**: ${stats.userId}`
-                                    }
-                                ]
+                                        text:
+                                            `📊 **Estadísticas del Post #${stats.postId}**\n\n` +
+                                            `**Título**: ${stats.title}\n` +
+                                            `**Palabras en título**: ${stats.titleWordCount}\n` +
+                                            `**Palabras en contenido**: ${stats.wordCount}\n` +
+                                            `**Total de palabras**: ${stats.totalWords}\n` +
+                                            `**Sentimiento**: ${stats.sentiment}\n` +
+                                            `**Palabras positivas**: ${stats.positiveWords}\n` +
+                                            `**Palabras negativas**: ${stats.negativeWords}\n` +
+                                            `**Usuario ID**: ${stats.userId}`,
+                                    },
+                                ],
                             };
                             break;
 
@@ -424,7 +476,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         jsonrpc: "2.0",
                         error: {
                             code: -32603,
-                            message: toolError instanceof Error ? toolError.message : "Tool execution error"
+                            message:
+                                toolError instanceof Error
+                                    ? toolError.message
+                                    : "Tool execution error",
                         },
                         id: id !== undefined ? id : 0,
                     });
