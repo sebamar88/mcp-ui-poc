@@ -11,13 +11,17 @@ type VercelResponse = ServerResponse & {
 
 // Función simple para obtener posts
 async function fetchPosts(limit: number = 10) {
-    const response = await fetch(`https://jsonplaceholder.typicode.com/posts?_limit=${limit}`);
+    const response = await fetch(
+        `https://jsonplaceholder.typicode.com/posts?_limit=${limit}`
+    );
     return response.json();
 }
 
 // Función simple para obtener un post específico
 async function fetchPost(id: number) {
-    const response = await fetch(`https://jsonplaceholder.typicode.com/posts/${id}`);
+    const response = await fetch(
+        `https://jsonplaceholder.typicode.com/posts/${id}`
+    );
     return response.json();
 }
 
@@ -36,7 +40,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === "GET") {
         try {
             const posts = await fetchPosts(10);
-            
+
             const response = {
                 jsonrpc: "2.0",
                 result: {
@@ -44,12 +48,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         uri: `post://${post.id}`,
                         name: post.title,
                         description: post.body.substring(0, 100) + "...",
-                        mimeType: "text/html"
-                    }))
+                        mimeType: "text/html",
+                    })),
                 },
-                id: 1
+                id: 1,
             };
-            
+
             res.status(200).json(response);
             return;
         } catch (error) {
@@ -57,9 +61,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 jsonrpc: "2.0",
                 error: {
                     code: -32603,
-                    message: "Error obteniendo posts"
+                    message: "Error obteniendo posts",
                 },
-                id: 1
+                id: 1,
             });
             return;
         }
@@ -70,28 +74,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             jsonrpc: "2.0",
             error: {
                 code: -32601,
-                message: "Método no permitido"
+                message: "Método no permitido",
             },
-            id: null
+            id: 0,
         });
         return;
     }
 
     try {
         let requestData;
-        
+
         // Intentar leer el body
         if (req.body) {
-            requestData = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+            requestData =
+                typeof req.body === "string" ? JSON.parse(req.body) : req.body;
         } else {
             // Leer manualmente
-            let body = '';
-            req.on('data', chunk => {
+            let body = "";
+            req.on("data", (chunk) => {
                 body += chunk.toString();
             });
-            
+
             await new Promise<void>((resolve) => {
-                req.on('end', () => {
+                req.on("end", () => {
                     try {
                         requestData = JSON.parse(body);
                         resolve();
@@ -107,9 +112,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 jsonrpc: "2.0",
                 error: {
                     code: -32700,
-                    message: "Parse error"
+                    message: "Parse error",
                 },
-                id: null
+                id: 0,
             });
             return;
         }
@@ -121,9 +126,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 jsonrpc: "2.0",
                 error: {
                     code: -32600,
-                    message: "Invalid Request"
+                    message: "Invalid Request",
                 },
-                id: id || null
+                id: id !== undefined ? id : 0,
+            });
+            return;
+        }
+
+        // Validar que el método existe
+        if (!method || typeof method !== "string") {
+            res.status(400).json({
+                jsonrpc: "2.0",
+                error: {
+                    code: -32602,
+                    message: "Method is required",
+                },
+                id: id !== undefined ? id : 0,
             });
             return;
         }
@@ -137,13 +155,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     capabilities: {
                         resources: {
                             subscribe: false,
-                            listChanged: false
-                        }
+                            listChanged: false,
+                        },
                     },
                     serverInfo: {
                         name: "Simple Posts MCP Server",
-                        version: "1.0.0"
-                    }
+                        version: "1.0.0",
+                    },
                 };
                 break;
 
@@ -154,8 +172,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         uri: `post://${post.id}`,
                         name: post.title,
                         description: post.body.substring(0, 100) + "...",
-                        mimeType: "text/html"
-                    }))
+                        mimeType: "text/html",
+                    })),
                 };
                 break;
 
@@ -165,9 +183,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         jsonrpc: "2.0",
                         error: {
                             code: -32602,
-                            message: "Invalid params: uri required"
+                            message: "Invalid params: uri required",
                         },
-                        id: id || null
+                        id: id !== undefined ? id : 0,
                     });
                     return;
                 }
@@ -178,21 +196,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         jsonrpc: "2.0",
                         error: {
                             code: -32602,
-                            message: "Invalid URI format"
+                            message: "Invalid URI format",
                         },
-                        id: id || null
+                        id: id !== undefined ? id : 0,
                     });
                     return;
                 }
 
                 const postId = parseInt(match[1]);
                 const post = await fetchPost(postId);
-                
+
                 result = {
-                    contents: [{
-                        uri: params.uri,
-                        mimeType: "text/html",
-                        text: `
+                    contents: [
+                        {
+                            uri: params.uri,
+                            mimeType: "text/html",
+                            text: `
                         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                           <h1 style="color: #333; border-bottom: 2px solid #007acc; padding-bottom: 10px;">
                             ${post.title}
@@ -204,8 +223,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                             <span>Post ID: ${post.id} | User ID: ${post.userId}</span>
                           </div>
                         </div>
-                        `
-                    }]
+                        `,
+                        },
+                    ],
                 };
                 break;
 
@@ -214,9 +234,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     jsonrpc: "2.0",
                     error: {
                         code: -32601,
-                        message: `Method not found: ${method}`
+                        message: `Method not found: ${method}`,
                     },
-                    id: id || null
+                    id: id !== undefined ? id : 0,
                 });
                 return;
         }
@@ -224,17 +244,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         res.status(200).json({
             jsonrpc: "2.0",
             result,
-            id: id || null
+            id: id !== undefined ? id : 0,
         });
-
     } catch (error) {
         res.status(500).json({
             jsonrpc: "2.0",
             error: {
                 code: -32603,
-                message: error instanceof Error ? error.message : "Internal error"
+                message:
+                    error instanceof Error ? error.message : "Internal error",
             },
-            id: null
+            id: 0,
         });
     }
 }
