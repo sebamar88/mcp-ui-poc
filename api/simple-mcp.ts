@@ -165,6 +165,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 };
                 break;
 
+            case "notifications/initialized":
+                // Esta es una notificación, no requiere respuesta con result
+                res.status(200).json({
+                    jsonrpc: "2.0",
+                    id: id !== undefined ? id : 0,
+                });
+                return;
+
             case "resources/list":
                 const posts = await fetchPosts(10);
                 result = {
