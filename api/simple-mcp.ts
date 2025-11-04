@@ -25,6 +25,50 @@ async function fetchPost(id: number) {
     return response.json();
 }
 
+// Función para buscar posts por término
+async function searchPosts(query: string, limit: number = 5) {
+    const response = await fetch(`https://jsonplaceholder.typicode.com/posts`);
+    const allPosts = await response.json();
+    
+    const filtered = allPosts.filter((post: any) => 
+        post.title.toLowerCase().includes(query.toLowerCase()) ||
+        post.body.toLowerCase().includes(query.toLowerCase())
+    );
+    
+    return filtered.slice(0, limit);
+}
+
+// Función para obtener estadísticas de un post
+async function getPostStats(postId: number) {
+    const post = await fetchPost(postId);
+    const wordCount = post.body.split(/\s+/).length;
+    const titleWordCount = post.title.split(/\s+/).length;
+    
+    // Análisis de sentimiento básico (simulado)
+    const positiveWords = ['good', 'great', 'excellent', 'amazing', 'wonderful', 'fantastic', 'perfect'];
+    const negativeWords = ['bad', 'terrible', 'awful', 'horrible', 'wrong', 'error', 'problem'];
+    
+    const text = (post.title + ' ' + post.body).toLowerCase();
+    const positiveCount = positiveWords.reduce((count, word) => count + (text.split(word).length - 1), 0);
+    const negativeCount = negativeWords.reduce((count, word) => count + (text.split(word).length - 1), 0);
+    
+    let sentiment = 'neutral';
+    if (positiveCount > negativeCount) sentiment = 'positive';
+    else if (negativeCount > positiveCount) sentiment = 'negative';
+    
+    return {
+        postId: post.id,
+        title: post.title,
+        wordCount,
+        titleWordCount,
+        totalWords: wordCount + titleWordCount,
+        sentiment,
+        positiveWords: positiveCount,
+        negativeWords: negativeCount,
+        userId: post.userId
+    };
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Headers CORS
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -310,6 +354,82 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         }
                     ]
                 };
+                break;
+
+            case "tools/call":
+                if (!params?.name) {
+                    res.status(400).json({
+                        jsonrpc: "2.0",
+                        error: {
+                            code: -32602,
+                            message: "Tool name is required"
+                        },
+                        id: id !== undefined ? id : 0,
+                    });
+                    return;
+                }
+
+                const toolName = params.name;
+                const toolArgs = params.arguments || {};
+
+                try {
+                    switch (toolName) {
+                        case "search-posts":
+                            if (!toolArgs.query) {
+                                throw new Error("Query parameter is required");
+                            }
+                            const searchResults = await searchPosts(toolArgs.query, toolArgs.limit || 5);
+                            result = {
+                                content: [
+                                    {
+                                        type: "text",
+                                        text: `Encontrados ${searchResults.length} posts que contienen "${toolArgs.query}":\n\n` +
+                                              searchResults.map((post: any, index: number) => 
+                                                `${index + 1}. **Post #${post.id}**: ${post.title}\n` +
+                                                `   ${post.body.substring(0, 100)}...\n`
+                                              ).join('\n')
+                                    }
+                                ]
+                            };
+                            break;
+
+                        case "get-post-stats":
+                            if (!toolArgs.post_id) {
+                                throw new Error("post_id parameter is required");
+                            }
+                            const stats = await getPostStats(toolArgs.post_id);
+                            result = {
+                                content: [
+                                    {
+                                        type: "text",
+                                        text: `📊 **Estadísticas del Post #${stats.postId}**\n\n` +
+                                              `**Título**: ${stats.title}\n` +
+                                              `**Palabras en título**: ${stats.titleWordCount}\n` +
+                                              `**Palabras en contenido**: ${stats.wordCount}\n` +
+                                              `**Total de palabras**: ${stats.totalWords}\n` +
+                                              `**Sentimiento**: ${stats.sentiment}\n` +
+                                              `**Palabras positivas**: ${stats.positiveWords}\n` +
+                                              `**Palabras negativas**: ${stats.negativeWords}\n` +
+                                              `**Usuario ID**: ${stats.userId}`
+                                    }
+                                ]
+                            };
+                            break;
+
+                        default:
+                            throw new Error(`Unknown tool: ${toolName}`);
+                    }
+                } catch (toolError) {
+                    res.status(400).json({
+                        jsonrpc: "2.0",
+                        error: {
+                            code: -32603,
+                            message: toolError instanceof Error ? toolError.message : "Tool execution error"
+                        },
+                        id: id !== undefined ? id : 0,
+                    });
+                    return;
+                }
                 break;
 
             default:
